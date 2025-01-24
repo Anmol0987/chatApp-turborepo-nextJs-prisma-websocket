@@ -8,8 +8,11 @@ const getId = async (slug: string) => {
 
 }
 
+
+
 const chatRoomId = async ({ params }: { params: { slug: string } }) => {
     const slug = (await params).slug
+    
     const roomId = await getId(slug)
 
     return (

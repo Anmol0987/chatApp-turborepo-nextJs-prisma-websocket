@@ -4,11 +4,15 @@ import { JWT_SECRET } from "@repo/backend-common/config";
 import { middleware } from "./middleWare";
 import { CreateUserSchema, SigninSchema, CreateRoomSchema } from "@repo/common/types";
 import { prismaClient } from "@repo/db/client";
+import cors from "cors"
 const app = express();
 app.use(express.json());
 
+app.use(cors())
+
 app.post("/signup", async (req, res) => {
     const parsedData = CreateUserSchema.safeParse(req.body);
+    console.log(parsedData)
     if (!parsedData.success) {
         console.log(parsedData.error);
         res.json({
@@ -25,10 +29,11 @@ app.post("/signup", async (req, res) => {
                 password: parsedData.data.password
             }
         })
+        console.log(user)
         res.json({
             userId: user?.id
         })
-    }
+    }//4a809c7c-2dbd-4619-9e54-053d1b37bb9e
     catch (e) {
         res.status(411).json({
             message: "User already exists with this username"
@@ -67,37 +72,69 @@ app.post("/signin", async (req, res) => {
     })
 })
 
-app.post("/room", middleware, async (req, res) => {
+// app.post("/room", middleware, async (req, res) => {
 
-    const parsedData = CreateRoomSchema.safeParse(req.body);
-    if (!parsedData.success) {
-        res.json({
-            message: "Incorrect inputs"
-        })
-        return;
-    }
-    // @ts-ignore: TODO: Fix this
-    const userId = req.userId;
+//     const parsedData = CreateRoomSchema.safeParse(req.body);
+//     if (!parsedData.success) {
+//         res.json({
+//             message: "Incorrect inputs"
+//         })
+//         return;
+//     }
+//     // @ts-ignore: TODO: Fix this
+//     const userId = req.userId;
 
+//     try {
+//         const room = await prismaClient.room.create({
+//             data: {
+//                 slug: parsedData.data.name,
+//                 adminId: userId
+//             }
+//         })
+
+//         res.json({
+//             roomId: room.id
+//         })
+//     } catch (e) {
+//         res.status(411).json({
+//             message: "Room already exists with this name"
+//         })
+//     }
+// })
+
+
+app.get("/room/:slug",middleware, async (req, res) => {
+    const slug = req.params.slug;
+    //@ts-ignore
+    const adminId = req.userId;
+    console.log("slug",slug);
     try {
-        const room = await prismaClient.room.create({
-            data: {
-                slug: parsedData.data.name,
-                adminId: userId
+        let room = await prismaClient.room.findFirst({
+            where: {
+                slug
             }
-        })
+        });
+        if (!room) {
+            room = await prismaClient.room.create({
+                data: {
+                    slug: slug || '',
+                    adminId
+                }
+            })
+        }
+        console.log("++++++++++++++++++", room);
 
         res.json({
-            roomId: room.id
+            room
         })
     } catch (e) {
-        res.status(411).json({
-            message: "Room already exists with this name"
-        })
+        console.log(e);
+        res.status(500).json({
+            message: "Internal server error"
+        });
+
     }
 })
-
-
 app.get("/chats/:roomId", async (req, res) => {
     try {
         const roomId = Number(req.params.roomId);
@@ -122,19 +159,6 @@ app.get("/chats/:roomId", async (req, res) => {
         })
     }
 
-})
-app.get("/room/:slug", async (req, res) => {
-    const slug = req.params.slug;
-    console.log(slug);
-    const room = await prismaClient.room.findFirst({
-        where: {
-            slug
-        }
-    });
-    console.log(room);
-    res.json({
-        room
-    })
 })
 
 app.listen(3001);
