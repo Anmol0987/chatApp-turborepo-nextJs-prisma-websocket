@@ -2,6 +2,8 @@ import { WebSocketServer, WebSocket } from "ws"
 import jwt from "jsonwebtoken"
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { prismaClient } from "@repo/db/client";
+import cookieParser from "cookie-parser";
+import cookie from "cookie";
 
 const wss = new WebSocketServer({ port: 8080 })
 
@@ -14,9 +16,10 @@ interface User {
 const users: User[] = []
 
 function checkUser(token: string): string | null {
+    console.log("innnn")
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-
+        console.log("decodedddddddddddd:", decoded)
         if (typeof decoded == "string") {
             console.log("string nul")
             return null;
@@ -37,16 +40,17 @@ function checkUser(token: string): string | null {
 
 wss.on("connection", (ws, request) => {
 
+
     const url = request.url;
     if (!url) {
         return;
     }
     const queryParams = new URLSearchParams(url.split('?')[1]);
+    console.log("queryParamsssssssssss", queryParams)
     const token = queryParams.get('token') || "";
-    console.log(token)
-
+    console.log("tokennnnnnnnnnnnnnn:",token)
     const userId = checkUser(token)
-    console.log(userId)
+    console.log("userIddddddddddddddddddd:", userId)
 
     if (userId == null) {
         ws.close()
@@ -59,11 +63,13 @@ wss.on("connection", (ws, request) => {
     })
     ws.on("message", async (data) => {
         let parsedData;
+        
         if (typeof data !== "string") {
             parsedData = JSON.parse(data.toString());
         } else {
             parsedData = JSON.parse(data); // {type: "join-room", roomId: 1}
         }
+        console.log("parsedData", parsedData)
 
         if (parsedData.type == "join_room") {
             const user = users.find(x => x.ws === ws)

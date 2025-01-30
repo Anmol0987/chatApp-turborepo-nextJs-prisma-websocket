@@ -1,12 +1,15 @@
+"use client";
 import { useEffect, useState } from "react";
 import { WS_URL } from "../app/config";
+import { useSession } from "next-auth/react";
 
 export function useSocket() {
+    const session = useSession();
     const [loading, setLoading] = useState(true);
     const [socket, setSocket] = useState<WebSocket>();
-
+    console.log("hook",session.data?.token)
     useEffect(() => {
-        const ws = new WebSocket(`${WS_URL}?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlMWFjOTg2ZS01ZTI2LTQ2ZjUtODBmZC0xNjQ1Mjk2NjVhM2UiLCJpYXQiOjE3Mzc3MDQzNDR9.glozEwch0Ysr1mlDzA2zuTdR3WE209Hg4d_y-v6hSsc`);
+        const ws = new WebSocket(`${WS_URL}?token=${session?.data?.token}`);
         ws.onopen = () => {
             setLoading(false);
             setSocket(ws);
@@ -18,6 +21,3 @@ export function useSocket() {
         loading
     }
 }
-
-
-//token=

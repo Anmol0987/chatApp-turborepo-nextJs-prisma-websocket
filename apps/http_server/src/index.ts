@@ -1,14 +1,20 @@
 import express from "express";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { middleware } from "./middleWare";
 import { CreateUserSchema, SigninSchema, CreateRoomSchema } from "@repo/common/types";
 import { prismaClient } from "@repo/db/client";
 import cors from "cors"
+import cookieParser from "cookie-parser";
+
+
 const app = express();
 app.use(express.json());
-
-app.use(cors())
+app.use(cookieParser());
+app.use(cors({
+    credentials: true,
+    origin: "http://localhost:3000"
+}));
 
 app.post("/signup", async (req, res) => {
     const parsedData = CreateUserSchema.safeParse(req.body);
@@ -62,52 +68,24 @@ app.post("/signin", async (req, res) => {
         })
         return;
     }
-
-    const token = jwt.sign({
-        userId: user?.id
-    }, JWT_SECRET);
-
-    res.json({
+    const token = jwt.sign( {userId: user.id} , JWT_SECRET);
+    console.log(token);
+    res.send({
+        id: user?.id,
+        username: user?.email,
         token
     })
 })
 
-// app.post("/room", middleware, async (req, res) => {
-
-//     const parsedData = CreateRoomSchema.safeParse(req.body);
-//     if (!parsedData.success) {
-//         res.json({
-//             message: "Incorrect inputs"
-//         })
-//         return;
-//     }
-//     // @ts-ignore: TODO: Fix this
-//     const userId = req.userId;
-
-//     try {
-//         const room = await prismaClient.room.create({
-//             data: {
-//                 slug: parsedData.data.name,
-//                 adminId: userId
-//             }
-//         })
-
-//         res.json({
-//             roomId: room.id
-//         })
-//     } catch (e) {
-//         res.status(411).json({
-//             message: "Room already exists with this name"
-//         })
-//     }
-// })
 
 
+//@ts-ignore
 app.get("/room/:slug",middleware, async (req, res) => {
     const slug = req.params.slug;
     //@ts-ignore
-    const adminId = req.userId;
-    console.log("slug",slug);
+    const adminId = req.userId
+    console.log("adminId", adminId);
+    console.log("slug", slug);
     try {
         let room = await prismaClient.room.findFirst({
             where: {
@@ -118,7 +96,8 @@ app.get("/room/:slug",middleware, async (req, res) => {
             room = await prismaClient.room.create({
                 data: {
                     slug: slug || '',
-                    adminId
+                    //@ts-ignore
+                    adminId: adminId
                 }
             })
         }
